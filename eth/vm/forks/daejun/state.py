@@ -1,11 +1,25 @@
 from typing import Type
 
-from eth.vm.forks.berlin.state import (
-    BerlinState
+from eth_hash.auto import keccak
+
+from eth_utils import (
+    encode_hex,
+)
+
+from eth._utils.address import (
+    generate_contract_address,
 )
 
 from eth.vm.forks.berlin.state import (
-    BerlinTransactionExecutor
+    BerlinState,
+)
+
+from eth.vm.message import (
+    Message,
+)
+
+from eth.vm.forks.berlin.state import (
+    BerlinTransactionExecutor,
 )
 
 from eth.abc import (
@@ -15,7 +29,11 @@ from eth.abc import (
     TransactionExecutorAPI,
 )
 
+from eth.constants import CREATE_CONTRACT_ADDRESS
+from eth.vm.forks.frontier.constants import REFUND_SELFDESTRUCT
+
 from .computation import DaejunComputation
+
 from .validation import validate_daejun_transaction
 
 
@@ -76,11 +94,11 @@ class DaejunTransactionExecutor(BerlinTransactionExecutor):
         )
         return message
 
-    def build_computation():
-        # VM연산 수행[frontier코드 참조, berlin으로 상속방법 참조]
-        # computation : apply_create_message() or apply_message() [frontier코드 참조]
-        # -> apply_computaion() : loop연산 (메모리, 스택, 리턴 등), 상태 commit [base코드 참조]
-        pass
+    # def build_computation():
+    #     # VM연산 수행[frontier코드 참조, berlin으로 상속방법 참조]
+    #     # computation : apply_create_message() or apply_message() [frontier코드 참조]
+    #     # -> apply_computaion() : loop연산 (메모리, 스택, 리턴 등), 상태 commit [base코드 참조]
+    #     pass
 
     # def finalize_computation():
     #     # 가스 환불(refuld)[frontier코드 참조]
@@ -136,6 +154,14 @@ class DaejunTransactionExecutor(BerlinTransactionExecutor):
 
 
 class DaejunState(BerlinState):
+    
+    # executor.__call__()의 동작 순서
+    # (1) validate_transaction(transaction)
+    # (2) build_evm_message(transaction)
+    # (3) build_computation(message, transaction)
+    # (4) finalize_computation(transaction, computation)
+    # (5) return finalized_computation    
+
     computation_class = DaejunComputation
     transaction_executor_class: Type[TransactionExecutorAPI] = DaejunTransactionExecutor
 

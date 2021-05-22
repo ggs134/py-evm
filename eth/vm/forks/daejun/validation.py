@@ -13,7 +13,7 @@ from eth_utils import (
     ValidationError,
 )
 
-from eth.constatns import (
+from eth.constants import (
     SECPK1_N,
 )
 
