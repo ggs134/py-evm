@@ -16,6 +16,7 @@ from eth.abc import (
 )
 
 from .computation import DaejunComputation
+from .validation import validate_daejun_transaction
 
 
 class DaejunTransactionExecutor(BerlinTransactionExecutor):
@@ -37,3 +38,7 @@ class DaejunTransactionExecutor(BerlinTransactionExecutor):
 class DaejunState(BerlinState):
     computation_class = DaejunComputation
     transaction_executor_class: Type[TransactionExecutorAPI] = DaejunTransactionExecutor
+
+    def validate_transaction(self, transaction: SignedTransactionAPI) -> None:
+        validate_daejun_transaction(self, transaction)
+
