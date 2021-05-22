@@ -58,18 +58,17 @@ class DaejunTransactionExecutor(BerlinTransactionExecutor):
 
     def build_evm_message(self, transaction: SignedTransactionAPI) -> MessageAPI:
 
-        # TODO : gas related
+        ### DAEJUN changed ###
         # gas_fee = transaction.gas * transaction.gas_price
         gas_fee = 0
 
-        # TODO : gas related
+        ### DAEJUN changed ###
         # Buy Gas
         self.vm_state.delta_balance(transaction.sender, -1 * gas_fee)
 
         # Increment Nonce
         self.vm_state.increment_nonce(transaction.sender)
 
-        # TODO : gas related
         # Setup VM Message
         # VM에 최초로 전달하는 가스량. 그냥 두면 된다.
         message_gas = transaction.gas - transaction.intrinsic_gas
@@ -119,13 +118,11 @@ class DaejunTransactionExecutor(BerlinTransactionExecutor):
         
         print("before finalize reciever.balance : ", self.vm_state.get_balance(transaction.to))
 
-        # TODO : gas related 
         # Self Destruct Refunds
         num_deletions = len(computation.get_accounts_for_deletion())
         if num_deletions:
             computation.refund_gas(REFUND_SELFDESTRUCT * num_deletions)
 
-        # TODO : gas related
         # Gas Refunds
         gas_remaining = computation.get_gas_remaining()
         gas_refunded = computation.get_gas_refund()
@@ -142,7 +139,7 @@ class DaejunTransactionExecutor(BerlinTransactionExecutor):
 
             # self.vm_state.delta_balance(computation.msg.sender, gas_refund_amount)
 
-        # TODO : gas related
+        ### DAEJUN changed ###
         # Miner Fees
         # transaction_fee = \
         #     (transaction.gas - gas_remaining - gas_refund) * transaction.gas_price
