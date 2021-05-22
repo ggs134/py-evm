@@ -58,15 +58,20 @@ class DaejunTransactionExecutor(BerlinTransactionExecutor):
 
     def build_evm_message(self, transaction: SignedTransactionAPI) -> MessageAPI:
 
-        gas_fee = transaction.gas * transaction.gas_price
+        # TODO : gas related
+        # gas_fee = transaction.gas * transaction.gas_price
+        gas_fee = 0
 
+        # TODO : gas related
         # Buy Gas
         self.vm_state.delta_balance(transaction.sender, -1 * gas_fee)
 
         # Increment Nonce
         self.vm_state.increment_nonce(transaction.sender)
 
+        # TODO : gas related
         # Setup VM Message
+        # VM에 최초로 전달하는 가스량. 그냥 두면 된다.
         message_gas = transaction.gas - transaction.intrinsic_gas
 
         if transaction.to == CREATE_CONTRACT_ADDRESS:
@@ -111,11 +116,16 @@ class DaejunTransactionExecutor(BerlinTransactionExecutor):
     def finalize_computation(self,
                              transaction: SignedTransactionAPI,
                              computation: ComputationAPI) -> ComputationAPI:
+        
+        print("before finalize reciever.balance : ", self.vm_state.get_balance(transaction.to))
+
+        # TODO : gas related 
         # Self Destruct Refunds
         num_deletions = len(computation.get_accounts_for_deletion())
         if num_deletions:
             computation.refund_gas(REFUND_SELFDESTRUCT * num_deletions)
 
+        # TODO : gas related
         # Gas Refunds
         gas_remaining = computation.get_gas_remaining()
         gas_refunded = computation.get_gas_refund()
@@ -130,11 +140,13 @@ class DaejunTransactionExecutor(BerlinTransactionExecutor):
                 encode_hex(computation.msg.sender),
             )
 
-            self.vm_state.delta_balance(computation.msg.sender, gas_refund_amount)
+            # self.vm_state.delta_balance(computation.msg.sender, gas_refund_amount)
 
+        # TODO : gas related
         # Miner Fees
-        transaction_fee = \
-            (transaction.gas - gas_remaining - gas_refund) * transaction.gas_price
+        # transaction_fee = \
+        #     (transaction.gas - gas_remaining - gas_refund) * transaction.gas_price
+        transaction_fee = 0
         self.vm_state.logger.debug2(
             'TRANSACTION FEE: %s -> %s',
             transaction_fee,
