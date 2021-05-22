@@ -170,7 +170,7 @@ class DaejunTransactionExecutor(BerlinTransactionExecutor):
 
 class DaejunState(BerlinState):
     
-    # executor.__call__()의 동작 순서
+    # executor.__call__()의 동작 순서[base computation.py]
     # (1) validate_transaction(transaction)
     # (2) build_evm_message(transaction)
     # (3) build_computation(message, transaction)
