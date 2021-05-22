@@ -115,8 +115,6 @@ class DaejunTransactionExecutor(BerlinTransactionExecutor):
     def finalize_computation(self,
                              transaction: SignedTransactionAPI,
                              computation: ComputationAPI) -> ComputationAPI:
-        
-        print("before finalize reciever.balance : ", self.vm_state.get_balance(transaction.to))
 
         # Self Destruct Refunds
         num_deletions = len(computation.get_accounts_for_deletion())
