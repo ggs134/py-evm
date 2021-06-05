@@ -730,3 +730,7 @@ class MiningChain(Chain, MiningChainAPI):
             at_header = self.header
 
         return super().get_vm(at_header)
+
+
+class OVMMiningChain(MiningChain):
+    usingOVM : bool = True
