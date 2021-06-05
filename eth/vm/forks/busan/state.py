@@ -34,29 +34,37 @@ from eth.vm.forks.frontier.constants import REFUND_SELFDESTRUCT
 
 from .computation import BusanComputation
 
-from .validation import validate_busan_transaction
+from .validation import (
+    validate_busan_transaction,
+    validate_delegation_transaction,
+)
 
 
 class BusanTransactionExecutor(BerlinTransactionExecutor):
+    """
+    __call__() : eth.vm.state.py -> BaseTransactionExecutor.__call__()
+    
+    validate_delegation_transaction : eth.vm.frontier.state.py -> FrontierTransactionExecutor.validate_transaction()
+    build_delegation_evm_message : eth.vm.frontier.state.py -> FrontierTransactionExecutor.build_evm_message()
+    build_delegation_computation : eth.vm.forks.berlin.state.py -> BerlinTransactionExecutor.build_computation()
+    finalize_delegation_computation : eth.vm.frontier.state.py -> FrontierTransactionExecutor.finalize_computation()
+    """
 
-    ## Executor() 동작 순서 ##
+    def __call__(self, transaction: SignedTransactionAPI, is_delegation: bool = True) -> ComputationAPI:
+        if is_delegation:
+            #delegation validate, build_message, build_computation
+            self.validate_delegation_transaction(transaction)
+            message = self.build_delegation_evm_message(transaction)
+            computation = self.build_delegation_computation(message, transaction)
+            finalized_computation = self.finalize_delegation_computation(transaction, computation)
+            return finalized_computation
+        else:
+            return super().__call__(transaction)
 
-    # def build_evm_message():
-    #     # 가스 차감 후 메시지 객체 생성[frontier코드 참조]
-    #     pass
+    def validate_delegation_transaction(self, transaction):
+        validate_delegation_transaction(transaction)
 
-    # def build_computation():
-    #     # VM연산 수행[frontier코드 참조, berlin으로 상속방법 참조]
-    #     # computation : apply_create_message() or apply_message() [frontier코드 참조]
-    #     # -> apply_computaion() : loop연산 (메모리, 스택, 리턴 등), 상태 commit [base코드 참조]
-    #     pass
-
-    # def finalize_computation():
-    #     # 가스 환불(refuld)[frontier코드 참조]
-    #     # 트랜잭션 실사용 가스 계산, 마이너에게 지급(coinbase상태값에 반영)
-    #     pass
-
-    def build_evm_message(self, transaction: SignedTransactionAPI) -> MessageAPI:
+    def build_delegation_evm_message(self, transaction: SignedTransactionAPI) -> MessageAPI:
 
         ### DAEJUN changed ###
         # gas_fee = transaction.gas * transaction.gas_price
@@ -112,7 +120,24 @@ class BusanTransactionExecutor(BerlinTransactionExecutor):
         )
         return message
 
-    def finalize_computation(self,
+    def build_delegation_computation(
+            self,
+            message: MessageAPI,
+            transaction: SignedTransactionAPI) -> ComputationAPI:
+
+        self.vm_state.mark_address_warm(transaction.sender)
+
+        # Mark recipient as accessed, or the new contract being created
+        self.vm_state.mark_address_warm(message.storage_address)
+
+        for address, slots in transaction.access_list:
+            self.vm_state.mark_address_warm(address)
+            for slot in slots:
+                self.vm_state.mark_storage_warm(address, slot)
+
+        return super().build_computation(message, transaction)
+
+    def finalize_delegation_computation(self,
                              transaction: SignedTransactionAPI,
                              computation: ComputationAPI) -> ComputationAPI:
 
@@ -165,7 +190,7 @@ class BusanTransactionExecutor(BerlinTransactionExecutor):
 
 class BusanState(BerlinState):
     
-    # executor.__call__()의 동작 순서[base computation.py]
+    # executor.__call__()의 동작 순서[base state.py]
     # (1) validate_transaction(transaction)
     # (2) build_evm_message(transaction)
     # (3) build_computation(message, transaction)
@@ -177,4 +202,10 @@ class BusanState(BerlinState):
 
     def validate_transaction(self, transaction: SignedTransactionAPI) -> None:
         validate_busan_transaction(self, transaction)
+
+    # It came from eth.vm.forks.frontier.state.py -> FrontierState.apply_transaction()
+    def apply_delegation_transaction(self, transaction: SignedTransactionAPI) -> ComputationAPI:
+        executor = self.get_transaction_executor()
+        # delegation_executor = self.get_delegation_transaction_executor()
+        return executor(transaction, is_delegation=True)
 

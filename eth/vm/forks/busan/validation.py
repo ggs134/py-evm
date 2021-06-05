@@ -22,6 +22,10 @@ from eth.abc import (
     StateAPI
 )
 
+from eth.vm.forks.homestead.validation import (
+    validate_homestead_transaction,
+)
+
 def validate_busan_transaction(state : StateAPI,
                                 transaction: SignedTransactionAPI) -> None:
 
@@ -52,3 +56,12 @@ def validate_busan_transaction(state : StateAPI,
         raise ValidationError(
             f"Invalid transaction nonce: Expected {sender_nonce}, but got {transaction.nonce}"
         )
+
+def validate_delegation_transaction(state: StateAPI,
+                                   transaction: SignedTransactionAPI) -> None:
+    # if transaction.s > SECPK1_N // 2 or transaction.s == 0:
+    #     raise ValidationError("Invalid signature S value")
+
+    # validate_homestead_transaction(state, transaction)
+    #TODO : validate delegation transaction
+    pass

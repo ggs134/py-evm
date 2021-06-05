@@ -733,4 +733,34 @@ class MiningChain(Chain, MiningChainAPI):
 
 
 class OVMMiningChain(MiningChain):
+    """
+    MiningChain which competible OVM
+    apply_transaction came from MiningChain.apply_transaction()
+    """
     usingOVM : bool = True
+
+    def apply_transaction(self,
+                          transaction: SignedTransactionAPI
+                          ) -> Tuple[BlockAPI, ReceiptAPI, ComputationAPI]:
+        vm = self.get_vm(self.header)
+        base_block = vm.get_block()
+
+        if not vm.usingDelegationTx : 
+            receipt, computation = vm.apply_transaction(base_block.header, transaction)
+        else:
+            receipt, computation = vm.apply_delegate_transaction(base_block.header, transaction)
+
+        header_with_receipt = vm.add_receipt_to_header(base_block.header, receipt)
+
+        # since we are building the block locally, we have to persist all the incremental state
+        vm.state.persist()
+        new_header: BlockHeaderAPI = header_with_receipt.copy(state_root=vm.state.state_root)
+
+        transactions = base_block.transactions + (transaction, )
+        receipts = base_block.get_receipts(self.chaindb) + (receipt, )
+
+        new_block = vm.set_block_transactions(base_block, new_header, transactions, receipts)
+
+        self.header = new_block.header
+
+        return new_block, receipt, computation
